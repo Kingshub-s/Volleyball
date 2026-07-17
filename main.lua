@@ -1,4 +1,3 @@
--- [[ MAIN CORE SCRIPT ]] --
 local oldIndex
 oldIndex = hookmetamethod(game, "__index", function(self, key)
     if self == workspace and key == "GetServerTimeNow" then
@@ -26,10 +25,10 @@ local ScriptVersion = "1.4"
 local ScriptName = "Kings Hub"
 local LastUpdated = "12-06-2026"
 
--- [[ Official Stable LinoriaLib Repositories ]] --
-local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/wally-rblx/LinoriaLib/main/Library.lua"))()
-local ThemeManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/wally-rblx/LinoriaLib/main/addons/ThemeManager.lua"))()
-local SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/wally-rblx/LinoriaLib/main/addons/SaveManager.lua"))()
+local repo = "https://raw.githubusercontent.com/Kingshub-s/Volleyball/main/"
+local Library = loadstring(game:HttpGet(repo .. "Library.lua"))()
+local ThemeManager = loadstring(game:HttpGet(repo .. "addons/ThemeManager.lua"))()
+local SaveManager = loadstring(game:HttpGet(repo .. "addons/SaveManager.lua"))()
 
 local Options = Library.Options
 local Toggles = Library.Toggles
