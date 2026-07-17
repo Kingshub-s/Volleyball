@@ -36,6 +36,8 @@ Library.ForceCheckbox = false
 Library.ShowToggleFrameInKeybinds = true
 Library.ShowCustomCursor = false
 
+Library:SetNotifySide(...)
+
 local function notify(message, lifetime)
     Library:Notify({
         Title = ScriptName,
