@@ -36,7 +36,6 @@ local Toggles = Library.Toggles
 Library.ForceCheckbox = false
 Library.ShowToggleFrameInKeybinds = true
 Library.ShowCustomCursor = false
-Library:SetNotifySide("Left")
 
 local function notify(message, lifetime)
     Library:Notify({
