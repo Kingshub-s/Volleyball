@@ -1,4 +1,4 @@
-lua
+-- [[ MAIN CORE SCRIPT ]] --
 local oldIndex
 oldIndex = hookmetamethod(game, "__index", function(self, key)
     if self == workspace and key == "GetServerTimeNow" then
