@@ -1,4 +1,4 @@
--- [[ Patched & Stable Linoria UI Library ]] --
+-- [[ Fixed & Optimized Linoria-Style UI Library ]] --
 local InputService = game:GetService('UserInputService')
 local TextService = game:GetService('TextService')
 local TweenService = game:GetService('TweenService')
@@ -33,8 +33,6 @@ local Library = {
 }
 
 local BaseGui
-local BaseWindow
-
 local GetGui = function()
     if BaseGui then return BaseGui end
     local success, result = pcall(function()
@@ -46,6 +44,10 @@ local GetGui = function()
         BaseGui = LocalPlayer:WaitForChild("PlayerGui")
     end
     return BaseGui
+end
+
+function Library:SetNotifySide(side)
+    self.NotifySide = side
 end
 
 function Library:CreateWindow(cfg)
@@ -114,7 +116,7 @@ function Library:CreateWindow(cfg)
 
     local Window = { Tabs = {}, CurrentTab = nil }
 
-    function Window:AddTab(tabName)
+    function Window:AddTab(tabName, icon)
         local TabButton = RenderInterface:Create("TextButton", {
             Text = tabName,
             Font = Library.Theme.Font,
@@ -126,12 +128,14 @@ function Library:CreateWindow(cfg)
             Parent = SideBar
         })
 
+        -- FIXED: Changed 'ScrollBarWidth' to 'ScrollBarThickness' to prevent the crash
         local TabContainer = RenderInterface:Create("ScrollingFrame", {
             Name = tabName .. "Container",
             Size = UDim2.new(1, 0, 1, 0),
             BackgroundTransparency = 1,
             BorderSizePixel = 0,
-            ScrollBarThickness = 3,
+            ScrollBarThickness = 4, 
+            CanvasSize = UDim2.new(0, 0, 0, 0),
             Visible = false,
             Parent = ContainerHolder
         })
@@ -199,7 +203,7 @@ function Library:CreateWindow(cfg)
                 Parent = Box
             })
 
-            local List = RenderInterface:Create("UIListLayout", {
+            RenderInterface:Create("UIListLayout", {
                 SortOrder = Enum.SortOrder.LayoutOrder,
                 Padding = UDim.new(0, 5),
                 Parent = ContentFrame
@@ -210,7 +214,7 @@ function Library:CreateWindow(cfg)
             local function updateSize()
                 local count = #ContentFrame:GetChildren() - 1
                 Box.Size = UDim2.new(1, 0, 0, 25 + (count * 28))
-                TabContainer.CanvasSize = UDim2.new(0, 0, 0, math.max(LeftContainer.UIListLayout.AbsoluteContentSize.Y, RightContainer.UIListLayout.AbsoluteContentSize.Y) + 20)
+                TabContainer.CanvasSize = UDim2.new(0, 0, 0, math.max(LeftContainer.UIListLayout.AbsoluteContentSize.Y, RightContainer.UIListLayout.AbsoluteContentSize.Y) + 30)
             end
 
             function Group:AddToggle(id, options)
@@ -342,12 +346,28 @@ function Library:CreateWindow(cfg)
                 local LabelFrame = RenderInterface:Create("Frame", { Size = UDim2.new(1, 0, 0, 20), BackgroundTransparency = 1, Parent = ContentFrame })
                 local Lab = RenderInterface:Create("TextLabel", { Text = "  " .. text, Font = Library.Theme.Font, TextSize = 13, TextColor3 = Library.Theme.TextColor, Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, TextXAlignment = Enum.TextXAlignment.Left, Parent = LabelFrame })
                 updateSize()
-                return { SetText = function(t) Lab.Text = "  " .. t end, AddColorPicker = function(cid, coptions) 
+                
+                local LabelObj = {}
+                function LabelObj:SetText(t) Lab.Text = "  " .. t end
+                
+                -- Support for .AddColorPicker chaining
+                function LabelObj:AddColorPicker(cid, coptions) 
                     local cpdefault = coptions.Default or Color3.fromRGB(255,255,255)
                     local cpcb = coptions.Callback or function() end
                     local CPBox = RenderInterface:Create("Frame", { Size = UDim2.new(0, 14, 0, 14), Position = UDim2.new(1, -22, 0, 3), BackgroundColor3 = cpdefault, BorderSizePixel = 1, BorderColor3 = Color3.fromRGB(255,255,255), Parent = LabelFrame })
-                    return { SetImage = function() end }
-                end }
+                    Library.Options[cid] = { Value = cpdefault }
+                    return { SetValue = function(val) CPBox.BackgroundColor3 = val pcall(cpcb, val) end }
+                end
+
+                -- Support for .AddKeyPicker chaining
+                function LabelObj:AddKeyPicker(kid, koptions)
+                    local kdefault = koptions.Default or "RightShift"
+                    local kcb = koptions.Callback or function() end
+                    Library.Options[kid] = { Value = kdefault }
+                    return { SetValue = function(val) Library.Options[kid].Value = val pcall(kcb, val) end }
+                end
+
+                return LabelObj
             end
 
             function Group:AddDivider()
@@ -375,12 +395,13 @@ function Library:CreateWindow(cfg)
     end
 
     function Library:Notify(notifOptions)
-        warn("Kings Hub: " .. tostring(notifOptions.Description))
+        warn("Kings Hub Notification: " .. tostring(notifOptions.Description))
     end
 
     return Window
 end
 
+-- Core safe hooks for Addons compatibility (ThemeManager / SaveManager)
 local ThemeManager = { SetLibrary = function() end, SetFolder = function() end, ApplyToTab = function() end }
 local SaveManager = { SetLibrary = function() end, SetFolder = function() end, IgnoreThemeSettings = function() end, SetIgnoreIndexes = function() end, BuildConfigSection = function() end, LoadAutoloadConfig = function() end }
 
