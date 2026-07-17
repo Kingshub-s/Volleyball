@@ -26,15 +26,17 @@ local ScriptName = "Kings Hub"
 local LastUpdated = "12-06-2026"
 
 local repo = "https://raw.githubusercontent.com/Kingshub-s/Volleyball/main/"
-local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/violin-suzutsuki/LinoriaLib/main/Library.lua?t=" .. tick()))()
-local ThemeManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/violin-suzutsuki/LinoriaLib/main/addons/ThemeManager.lua?t=" .. tick()))()
-local SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/violin-suzutsuki/LinoriaLib/main/addons/SaveManager.lua?t=" .. tick()))()
+local Library = loadstring(game:HttpGet(repo .. "Library.lua"))()
+local ThemeManager = loadstring(game:HttpGet(repo .. "addons/ThemeManager.lua"))()
+local SaveManager = loadstring(game:HttpGet(repo .. "addons/SaveManager.lua"))()
+
 local Options = Library.Options
 local Toggles = Library.Toggles
 
 Library.ForceCheckbox = false
 Library.ShowToggleFrameInKeybinds = true
 Library.ShowCustomCursor = false
+Library:SetNotifySide("Left")
 
 local function notify(message, lifetime)
     Library:Notify({
