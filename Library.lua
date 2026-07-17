@@ -1,512 +1,389 @@
+-- [[ Patched & Stable Linoria UI Library ]] --
 local InputService = game:GetService('UserInputService')
 local TextService = game:GetService('TextService')
 local TweenService = game:GetService('TweenService')
 local RunService = game:GetService('RunService')
-local CoreGui = game:GetService('CoreGui')
+local Players = game:GetService('Players')
+local LocalPlayer = Players.LocalPlayer
 
-local RenderStepped = RunService.RenderStepped
-local LocalPlayer = game:GetService('Players').LocalPlayer
-local Mouse = LocalPlayer:GetMouse()
-
-local ProtectGui = protect_gui or (syn and syn.protect_gui) or function() end
-
-local ScreenGui = Instance.new('ScreenGui')
-ScreenGui.Name = 'LinoriaLibrary'
-ScreenGui.ResetOnSpawn = false
-ScreenGui.DisplayOrder = 100
-ProtectGui(ScreenGui)
-ScreenGui.Parent = CoreGui
+local RenderInterface = {} do
+    function RenderInterface:Create(class, properties)
+        local element = Instance.new(class)
+        for property, value in pairs(properties) do
+            element[property] = value
+        end
+        return element
+    end
+end
 
 local Library = {
     Registry = {},
     RegistryMap = {},
     Unloaded = false,
-    Options = {},
-    Toggles = {},
-    Folder = 'Linoria',
-    Theme = 'Default',
-    SetNotifySide = function(self, side) self.NotifySide = side end,
-    NotifySide = 'Left',
-    Font = Enum.Font.Code,
-}
-
-local Themes = {
-    Default = {
-        FontColor = Color3.fromRGB(255, 255, 255),
+    Theme = {
+        Font = Enum.Font.Code,
         MainColor = Color3.fromRGB(20, 20, 20),
         BackgroundColor = Color3.fromRGB(15, 15, 15),
-        AccentColor = Color3.fromRGB(0, 150, 255),
+        AccentColor = Color3.fromRGB(0, 255, 140),
         OutlineColor = Color3.fromRGB(35, 35, 35),
-    }
+        TextColor = Color3.fromRGB(255, 255, 255),
+    },
+    Options = {},
+    Toggles = {},
 }
 
-function Library:SafeCallback(f, ...)
-    if f then
-        local success, err = pcall(f, ...)
-        if not success then warn('Callback Error: ' .. tostring(err)) end
-    end
-end
+local BaseGui
+local BaseWindow
 
-function Library:AddToRegistry(inst, prop, themeProperty)
-    table.insert(self.Registry, { Inst = inst, Prop = prop, ThemeProp = themeProperty })
-    inst[prop] = Themes[self.Theme][themeProperty]
-end
-
-function Library:Notify(cfg)
-    local title = cfg.Title or 'Notification'
-    local desc = cfg.Description or ''
-    local time = cfg.Time or 5
-
-    local frame = Instance.new('Frame')
-    frame.Size = UDim2.new(0, 250, 0, 60)
-    frame.BackgroundColor3 = Themes[self.Theme].MainColor
-    frame.BorderColor3 = Themes[self.Theme].AccentColor
-    frame.Position = self.NotifySide == 'Left' and UDim2.new(0, 10, 0, 10) or UDim2.new(1, -260, 0, 10)
-    frame.Parent = ScreenGui
-
-    local ttl = Instance.new('TextLabel')
-    ttl.Size = UDim2.new(1, -10, 0, 20)
-    ttl.Position = UDim2.new(0, 5, 0, 5)
-    ttl.Text = title
-    ttl.TextColor3 = Themes[self.Theme].AccentColor
-    ttl.BackgroundTransparency = 1
-    ttl.Font = self.Font
-    ttl.TextSize = 14
-    ttl.TextXAlignment = Enum.TextXAlignment.Left
-    ttl.Parent = frame
-
-    local dsc = Instance.new('TextLabel')
-    dsc.Size = UDim2.new(1, -10, 1, -25)
-    dsc.Position = UDim2.new(0, 5, 0, 25)
-    dsc.Text = desc
-    dsc.TextColor3 = Themes[self.Theme].FontColor
-    dsc.BackgroundTransparency = 1
-    dsc.Font = self.Font
-    dsc.TextSize = 12
-    dsc.TextWrapped = true
-    dsc.TextXAlignment = Enum.TextXAlignment.Left
-    dsc.Parent = frame
-
-    task.delay(time, function()
-        frame:Destroy()
+local GetGui = function()
+    if BaseGui then return BaseGui end
+    local success, result = pcall(function()
+        return game:GetService("CoreGui")
     end)
+    if success and result then
+        BaseGui = result
+    else
+        BaseGui = LocalPlayer:WaitForChild("PlayerGui")
+    end
+    return BaseGui
 end
 
 function Library:CreateWindow(cfg)
-    local title = cfg.Title or 'Window'
+    local title = cfg.Title or "Script Hub"
     
-    local MainFrame = Instance.new('Frame')
-    MainFrame.Size = UDim2.new(0, 550, 0, 400)
-    MainFrame.Position = UDim2.new(0.5, -275, 0.5, -200)
-    MainFrame.BackgroundColor3 = Themes[self.Theme].BackgroundColor
-    MainFrame.BorderColor3 = Themes[self.Theme].OutlineColor
-    MainFrame.Active = true
-    MainFrame.Draggable = true
-    MainFrame.Parent = ScreenGui
+    local ScreenGui = RenderInterface:Create("ScreenGui", {
+        Name = "KingsHub_UI",
+        ResetOnSpawn = false,
+        DisplayOrder = 100,
+        Parent = GetGui()
+    })
+    
+    local MainFrame = RenderInterface:Create("Frame", {
+        Name = "MainFrame",
+        Position = UDim2.new(0.3, 0, 0.25, 0),
+        Size = UDim2.new(0, 550, 0, 420),
+        BackgroundColor3 = Library.Theme.MainColor,
+        BorderSizePixel = 1,
+        BorderColor3 = Library.Theme.OutlineColor,
+        Active = true,
+        Draggable = true,
+        Parent = ScreenGui
+    })
 
-    local TopBar = Instance.new('Frame')
-    TopBar.Size = UDim2.new(1, 0, 0, 30)
-    TopBar.BackgroundColor3 = Themes[self.Theme].MainColor
-    TopBar.BorderColor3 = Themes[self.Theme].AccentColor
-    TopBar.Parent = MainFrame
+    local TopBar = RenderInterface:Create("Frame", {
+        Name = "TopBar",
+        Size = UDim2.new(1, 0, 0, 35),
+        BackgroundColor3 = Library.Theme.BackgroundColor,
+        BorderSizePixel = 0,
+        Parent = MainFrame
+    })
 
-    local TitleLabel = Instance.new('TextLabel')
-    TitleLabel.Size = UDim2.new(1, -10, 1, 0)
-    TitleLabel.Position = UDim2.new(0, 10, 0, 0)
-    TitleLabel.Text = title
-    TitleLabel.TextColor3 = Themes[self.Theme].FontColor
-    TitleLabel.Font = self.Font
-    TitleLabel.TextSize = 16
-    TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
-    TitleLabel.BackgroundTransparency = 1
-    TitleLabel.Parent = TopBar
+    local TitleLabel = RenderInterface:Create("TextLabel", {
+        Text = "  " .. title,
+        Font = Library.Theme.Font,
+        TextSize = 16,
+        TextColor3 = Library.Theme.TextColor,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        Size = UDim2.new(0.7, 0, 1, 0),
+        BackgroundTransparency = 1,
+        Parent = TopBar
+    })
 
-    local TabContainer = Instance.new('Frame')
-    TabContainer.Size = UDim2.new(1, 0, 0, 25)
-    TabContainer.Position = UDim2.new(0, 0, 0, 30)
-    TabContainer.BackgroundColor3 = Themes[self.Theme].MainColor
-    TabContainer.BorderColor3 = Themes[self.Theme].OutlineColor
-    TabContainer.Parent = MainFrame
+    local SideBar = RenderInterface:Create("Frame", {
+        Name = "SideBar",
+        Position = UDim2.new(0, 0, 0, 35),
+        Size = UDim2.new(0, 130, 1, -35),
+        BackgroundColor3 = Library.Theme.BackgroundColor,
+        BorderSizePixel = 0,
+        Parent = MainFrame
+    })
 
-    local TabList = Instance.new('UIListLayout')
-    TabList.FillDirection = Enum.FillDirection.Horizontal
-    TabList.SortOrder = Enum.SortOrder.LayoutOrder
-    TabList.Parent = TabContainer
+    local SideLayout = RenderInterface:Create("UIListLayout", {
+        SortOrder = Enum.SortOrder.LayoutOrder,
+        Padding = UDim.new(0, 2),
+        Parent = SideBar
+    })
 
-    local ContentContainer = Instance.new('Frame')
-    ContentContainer.Size = UDim2.new(1, 0, 1, -55)
-    ContentContainer.Position = UDim2.new(0, 0, 0, 55)
-    ContentContainer.BackgroundTransparency = 1
-    ContentContainer.Parent = MainFrame
+    local ContainerHolder = RenderInterface:Create("Frame", {
+        Name = "ContainerHolder",
+        Position = UDim2.new(0, 135, 0, 40),
+        Size = UDim2.new(1, -140, 1, -45),
+        BackgroundTransparency = 1,
+        Parent = MainFrame
+    })
 
-    local WindowObj = { Tabs = {} }
+    local Window = { Tabs = {}, CurrentTab = nil }
 
-    function WindowObj:AddTab(name, icon)
-        local TabButton = Instance.new('TextButton')
-        TabButton.Size = UDim2.new(0, 100, 1, 0)
-        TabButton.BackgroundColor3 = Themes[Library.Theme].MainColor
-        TabButton.Text = name
-        TabButton.TextColor3 = Themes[Library.Theme].FontColor
-        TabButton.Font = Library.Font
-        TabButton.TextSize = 14
-        TabButton.Parent = TabContainer
+    function Window:AddTab(tabName)
+        local TabButton = RenderInterface:Create("TextButton", {
+            Text = tabName,
+            Font = Library.Theme.Font,
+            TextSize = 14,
+            TextColor3 = Color3.fromRGB(150, 150, 150),
+            Size = UDim2.new(1, 0, 0, 30),
+            BackgroundColor3 = Color3.fromRGB(25, 25, 25),
+            BorderSizePixel = 0,
+            Parent = SideBar
+        })
 
-        local TabPage = Instance.new('Frame')
-        TabPage.Size = UDim2.new(1, 0, 1, 0)
-        TabPage.BackgroundTransparency = 1
-        TabPage.Visible = #WindowObj.Tabs == 0
-        TabPage.Parent = ContentContainer
+        local TabContainer = RenderInterface:Create("ScrollingFrame", {
+            Name = tabName .. "Container",
+            Size = UDim2.new(1, 0, 1, 0),
+            BackgroundTransparency = 1,
+            BorderSizePixel = 0,
+            ScrollBarThickness = 3,
+            Visible = false,
+            Parent = ContainerHolder
+        })
 
-        local LeftPage = Instance.new('ScrollingFrame')
-        LeftPage.Size = UDim2.new(0.5, -10, 1, -10)
-        LeftPage.Position = UDim2.new(0, 5, 0, 5)
-        LeftPage.BackgroundTransparency = 1
-        LeftPage.CanvasSize = UDim2.new(0, 0, 0, 0)
-        LeftPage.ScrollBarWidth = 4
-        LeftPage.Parent = TabPage
+        local LeftContainer = RenderInterface:Create("Frame", {
+            Name = "Left",
+            Size = UDim2.new(0.5, -5, 1, 0),
+            BackgroundTransparency = 1,
+            Parent = TabContainer
+        })
 
-        local LeftList = Instance.new('UIListLayout')
-        LeftList.Padding = UDim.new(0, 8)
-        LeftList.Parent = LeftPage
-        LeftList:GetPropertyChangedSignal('AbsoluteContentSize'):Connect(function()
-            LeftPage.CanvasSize = UDim2.new(0, 0, 0, LeftList.AbsoluteContentSize.Y + 10)
-        end)
+        local RightContainer = RenderInterface:Create("Frame", {
+            Name = "Right",
+            Position = UDim2.new(0.5, 5, 0, 0),
+            Size = UDim2.new(0.5, -5, 1, 0),
+            BackgroundTransparency = 1,
+            Parent = TabContainer
+        })
 
-        local RightPage = Instance.new('ScrollingFrame')
-        RightPage.Size = UDim2.new(0.5, -10, 1, -10)
-        RightPage.Position = UDim2.new(0.5, 5, 0, 5)
-        RightPage.BackgroundTransparency = 1
-        RightPage.CanvasSize = UDim2.new(0, 0, 0, 0)
-        RightPage.ScrollBarWidth = 4
-        RightPage.Parent = TabPage
+        RenderInterface:Create("UIListLayout", { SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 8), Parent = LeftContainer })
+        RenderInterface:Create("UIListLayout", { SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 8), Parent = RightContainer })
 
-        local RightList = Instance.new('UIListLayout')
-        RightList.Padding = UDim.new(0, 8)
-        RightList.Parent = RightPage
-        RightList:GetPropertyChangedSignal('AbsoluteContentSize'):Connect(function()
-            RightPage.CanvasSize = UDim2.new(0, 0, 0, RightList.AbsoluteContentSize.Y + 10)
-        end)
+        if not Window.CurrentTab then
+            Window.CurrentTab = tabName
+            TabContainer.Visible = true
+            TabButton.TextColor3 = Library.Theme.AccentColor
+        end
 
         TabButton.MouseButton1Click:Connect(function()
-            for _, t in pairs(WindowObj.Tabs) do t.Page.Visible = false end
-            TabPage.Visible = true
+            for _, t in pairs(Window.Tabs) do
+                t.Container.Visible = false
+                t.Button.TextColor3 = Color3.fromRGB(150, 150, 150)
+            end
+            TabContainer.Visible = true
+            TabButton.TextColor3 = Library.Theme.AccentColor
         end)
 
-        local TabObj = {}
+        local Tab = { Button = TabButton, Container = TabContainer }
 
-        local function createGroupbox(parentFrame, title)
-            local Box = Instance.new('Frame')
-            Box.Size = UDim2.new(1, -5, 0, 30)
-            Box.BackgroundColor3 = Themes[Library.Theme].MainColor
-            Box.BorderColor3 = Themes[Library.Theme].OutlineColor
-            Box.Parent = parentFrame
+        local function CreateGroupbox(parentFrame, groupName)
+            local Box = RenderInterface:Create("Frame", {
+                Size = UDim2.new(1, 0, 0, 40),
+                BackgroundColor3 = Color3.fromRGB(25, 25, 25),
+                BorderColor3 = Library.Theme.OutlineColor,
+                BorderSizePixel = 1,
+                Parent = parentFrame
+            })
 
-            local BoxTitle = Instance.new('TextLabel')
-            BoxTitle.Size = UDim2.new(1, -10, 0, 20)
-            BoxTitle.Position = UDim2.new(0, 5, 0, 2)
-            BoxTitle.Text = title
-            BoxTitle.TextColor3 = Themes[Library.Theme].AccentColor
-            BoxTitle.Font = Library.Font
-            BoxTitle.TextSize = 13
-            BoxTitle.TextXAlignment = Enum.TextXAlignment.Left
-            BoxTitle.BackgroundTransparency = 1
-            BoxTitle.Parent = Box
+            local BoxTitle = RenderInterface:Create("TextLabel", {
+                Text = " " .. groupName,
+                Font = Library.Theme.Font,
+                TextSize = 13,
+                TextColor3 = Library.Theme.AccentColor,
+                Size = UDim2.new(1, 0, 0, 20),
+                BackgroundColor3 = Color3.fromRGB(30, 30, 30),
+                BorderSizePixel = 0,
+                TextXAlignment = Enum.TextXAlignment.Left,
+                Parent = Box
+            })
 
-            local Container = Instance.new('Frame')
-            Container.Size = UDim2.new(1, -10, 1, -25)
-            Container.Position = UDim2.new(0, 5, 0, 22)
-            Container.BackgroundTransparency = 1
-            Container.Parent = Box
+            local ContentFrame = RenderInterface:Create("Frame", {
+                Position = UDim2.new(0, 0, 0, 20),
+                Size = UDim2.new(1, 0, 1, -20),
+                BackgroundTransparency = 1,
+                Parent = Box
+            })
 
-            local BoxList = Instance.new('UIListLayout')
-            BoxList.Padding = UDim.new(0, 5)
-            BoxList.Parent = Container
+            local List = RenderInterface:Create("UIListLayout", {
+                SortOrder = Enum.SortOrder.LayoutOrder,
+                Padding = UDim.new(0, 5),
+                Parent = ContentFrame
+            })
 
-            BoxList:GetPropertyChangedSignal('AbsoluteContentSize'):Connect(function()
-                Box.Size = UDim2.new(1, -5, 0, BoxList.AbsoluteContentSize.Y + 30)
-            end)
+            local Group = {}
 
-            local GroupObj = {}
-
-            function GroupObj:AddToggle(id, config)
-                local text = config.Text or id
-                local default = config.Default or false
-                local cb = config.Callback
-
-                local ToggleFrame = Instance.new('Frame')
-                ToggleFrame.Size = UDim2.new(1, 0, 0, 20)
-                ToggleFrame.BackgroundTransparency = 1
-                ToggleFrame.Parent = Container
-
-                local Button = Instance.new('TextButton')
-                Button.Size = UDim2.new(0, 16, 0, 16)
-                Button.Position = UDim2.new(0, 2, 0, 2)
-                Button.BackgroundColor3 = default and Themes[Library.Theme].AccentColor or Themes[Library.Theme].BackgroundColor
-                Button.BorderColor3 = Themes[Library.Theme].OutlineColor
-                Button.Text = ""
-                Button.Parent = ToggleFrame
-
-                local Label = Instance.new('TextLabel')
-                Label.Size = UDim2.new(1, -25, 1, 0)
-                Label.Position = UDim2.new(0, 25, 0, 0)
-                Label.Text = text
-                Label.TextColor3 = Themes[Library.Theme].FontColor
-                Label.Font = Library.Font
-                Label.TextSize = 13
-                Label.TextXAlignment = Enum.TextXAlignment.Left
-                Label.BackgroundTransparency = 1
-                Label.Parent = ToggleFrame
-
-                local ToggleState = default
-                local ToggleData = { Value = ToggleState }
-
-                local function update()
-                    Button.BackgroundColor3 = ToggleData.Value and Themes[Library.Theme].AccentColor or Themes[Library.Theme].BackgroundColor
-                    Library:SafeCallback(cb, ToggleData.Value)
-                end
-
-                Button.MouseButton1Click:Connect(function()
-                    ToggleData.Value = not ToggleData.Value
-                    update()
-                end)
-
-                function ToggleData:SetValue(val)
-                    ToggleData.Value = val
-                    update()
-                end
-
-                Library.Toggles[id] = ToggleData
-                return ToggleData
+            local function updateSize()
+                local count = #ContentFrame:GetChildren() - 1
+                Box.Size = UDim2.new(1, 0, 0, 25 + (count * 28))
+                TabContainer.CanvasSize = UDim2.new(0, 0, 0, math.max(LeftContainer.UIListLayout.AbsoluteContentSize.Y, RightContainer.UIListLayout.AbsoluteContentSize.Y) + 20)
             end
 
-            function GroupObj:AddSlider(id, config)
-                local text = config.Text or id
-                local min = config.Min or 0
-                local max = config.Max or 100
-                local default = config.Default or min
-                local rounding = config.Rounding or 0
-                local suffix = config.Suffix or ""
-                local cb = config.Callback
+            function Group:AddToggle(id, options)
+                local text = options.Text or id
+                local default = options.Default or false
+                local cb = options.Callback or function() end
 
-                local SliderFrame = Instance.new('Frame')
-                SliderFrame.Size = UDim2.new(1, 0, 0, 35)
-                SliderFrame.BackgroundTransparency = 1
-                SliderFrame.Parent = Container
+                local ToggleFrame = RenderInterface:Create("Frame", {
+                    Size = UDim2.new(1, 0, 0, 24),
+                    BackgroundTransparency = 1,
+                    Parent = ContentFrame
+                })
 
-                local Label = Instance.new('TextLabel')
-                Label.Size = UDim2.new(1, 0, 0, 15)
-                Label.Text = text
-                Label.TextColor3 = Themes[Library.Theme].FontColor
-                Label.Font = Library.Font
-                Label.TextSize = 12
-                Label.TextXAlignment = Enum.TextXAlignment.Left
-                Label.BackgroundTransparency = 1
-                Label.Parent = SliderFrame
+                local Button = RenderInterface:Create("TextButton", {
+                    Size = UDim2.new(0, 14, 0, 14),
+                    Position = UDim2.new(0, 8, 0, 5),
+                    BackgroundColor3 = default and Library.Theme.AccentColor or Color3.fromRGB(40, 40, 40),
+                    BorderSizePixel = 0,
+                    Text = "",
+                    Parent = ToggleFrame
+                })
 
-                local Bar = Instance.new('Frame')
-                Bar.Size = UDim2.new(1, -4, 0, 12)
-                Bar.Position = UDim2.new(0, 2, 0, 18)
-                Bar.BackgroundColor3 = Themes[Library.Theme].BackgroundColor
-                Bar.BorderColor3 = Themes[Library.Theme].OutlineColor
-                Bar.Parent = SliderFrame
+                local Label = RenderInterface:Create("TextLabel", {
+                    Text = text,
+                    Font = Library.Theme.Font,
+                    TextSize = 13,
+                    TextColor3 = Library.Theme.TextColor,
+                    Position = UDim2.new(0, 30, 0, 0),
+                    Size = UDim2.new(1, -35, 1, 0),
+                    BackgroundTransparency = 1,
+                    TextXAlignment = Enum.TextXAlignment.Left,
+                    Parent = ToggleFrame
+                })
 
-                local Fill = Instance.new('Frame')
-                Fill.Size = UDim2.new((default - min) / (max - min), 0, 1, 0)
-                Fill.BackgroundColor3 = Themes[Library.Theme].AccentColor
-                Fill.BorderSizePixel = 0
-                Fill.Parent = Bar
+                local state = default
+                Library.Toggles[id] = { Value = state }
 
-                local ValLabel = Instance.new('TextLabel')
-                ValLabel.Size = UDim2.new(1, 0, 1, 0)
-                ValLabel.Text = tostring(default) .. suffix
-                ValLabel.TextColor3 = Themes[Library.Theme].FontColor
-                ValLabel.Font = Library.Font
-                ValLabel.TextSize = 11
-                ValLabel.BackgroundTransparency = 1
-                ValLabel.Parent = Bar
+                Button.MouseButton1Click:Connect(function()
+                    state = not state
+                    Library.Toggles[id].Value = state
+                    Button.BackgroundColor3 = state and Library.Theme.AccentColor or Color3.fromRGB(40, 40, 40)
+                    pcall(cb, state)
+                end)
 
-                local SliderData = { Value = default }
+                updateSize()
+                return { SetValue = function(val) state = val Button.BackgroundColor3 = state and Library.Theme.AccentColor or Color3.fromRGB(40, 40, 40) pcall(cb, state) end }
+            end
 
-                local function snap(val)
-                    if rounding == 0 then return math.floor(val + 0.5) end
-                    local p = math.pow(10, rounding)
-                    return math.floor(val * p + 0.5) / p
-                end
+            function Group:AddSlider(id, options)
+                local text = options.Text or id
+                local min = options.Min or 0
+                local max = options.Max or 100
+                local default = options.Default or min
+                local suffix = options.Suffix or ""
+                local cb = options.Callback or function() end
 
-                local function update(input)
-                    local percent = math.clamp((input.Position.X - Bar.AbsolutePosition.X) / Bar.AbsoluteSize.X, 0, 1)
-                    local rawVal = min + (max - min) * percent
-                    SliderData.Value = snap(rawVal)
+                local SliderFrame = RenderInterface:Create("Frame", {
+                    Size = UDim2.new(1, 0, 0, 38),
+                    BackgroundTransparency = 1,
+                    Parent = ContentFrame
+                })
+
+                local Label = RenderInterface:Create("TextLabel", {
+                    Text = text,
+                    Font = Library.Theme.Font,
+                    TextSize = 12,
+                    TextColor3 = Library.Theme.TextColor,
+                    Position = UDim2.new(0, 8, 0, 2),
+                    Size = UDim2.new(0.6, 0, 0, 14),
+                    BackgroundTransparency = 1,
+                    TextXAlignment = Enum.TextXAlignment.Left,
+                    Parent = SliderFrame
+                })
+
+                local ValueLabel = RenderInterface:Create("TextLabel", {
+                    Text = tostring(default) .. suffix,
+                    Font = Library.Theme.Font,
+                    TextSize = 12,
+                    TextColor3 = Library.Theme.AccentColor,
+                    Position = UDim2.new(0.6, 0, 0, 2),
+                    Size = UDim2.new(0.4, -8, 0, 14),
+                    BackgroundTransparency = 1,
+                    TextXAlignment = Enum.TextXAlignment.Right,
+                    Parent = SliderFrame
+                })
+
+                local SlideBar = RenderInterface:Create("Frame", {
+                    Position = UDim2.new(0, 8, 0, 20),
+                    Size = UDim2.new(1, -16, 0, 8),
+                    BackgroundColor3 = Color3.fromRGB(40, 40, 40),
+                    BorderSizePixel = 0,
+                    Parent = SliderFrame
+                })
+
+                local Fill = RenderInterface:Create("Frame", {
+                    Size = UDim2.new((default - min) / (max - min), 0, 1, 0),
+                    BackgroundColor3 = Library.Theme.AccentColor,
+                    BorderSizePixel = 0,
+                    Parent = SlideBar
+                })
+
+                Library.Options[id] = { Value = default }
+
+                local function updateSlider(input)
+                    local percent = math.clamp((input.Position.X - SlideBar.AbsolutePosition.X) / SlideBar.AbsoluteSize.X, 0, 1)
+                    local value = math.floor(min + (percent * (max - min)))
+                    Library.Options[id].Value = value
+                    ValueLabel.Text = tostring(value) .. suffix
                     Fill.Size = UDim2.new(percent, 0, 1, 0)
-                    ValLabel.Text = tostring(SliderData.Value) .. suffix
-                    Library:SafeCallback(cb, SliderData.Value)
+                    pcall(cb, value)
                 end
 
                 local dragging = false
-                Bar.InputBegan:Connect(function(input)
-                    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-                        dragging = true
-                        update(input)
-                    end
+                SlideBar.InputBegan:Connect(function(input)
+                    if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = true updateSlider(input) end
                 end)
-
                 InputService.InputChanged:Connect(function(input)
-                    if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-                        update(input)
-                    end
+                    if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then updateSlider(input) end
                 end)
-
                 InputService.InputEnded:Connect(function(input)
-                    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-                        dragging = false
-                    end
+                    if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end
                 end)
 
-                function SliderData:SetValue(val)
-                    SliderData.Value = math.clamp(snap(val), min, max)
-                    Fill.Size = UDim2.new((SliderData.Value - min) / (max - min), 0, 1, 0)
-                    ValLabel.Text = tostring(SliderData.Value) .. suffix
-                    Library:SafeCallback(cb, SliderData.Value)
-                end
-
-                Library.Options[id] = SliderData
-                return SliderData
+                updateSize()
+                return { SetValue = function(val) local percent = math.clamp((val - min) / (max - min), 0, 1) Fill.Size = UDim2.new(percent, 0, 1, 0) ValueLabel.Text = tostring(val) .. suffix Library.Options[id].Value = val pcall(cb, val) end }
             end
 
-            function GroupObj:AddLabel(text)
-                local LabelFrame = Instance.new('Frame')
-                LabelFrame.Size = UDim2.new(1, 0, 0, 18)
-                LabelFrame.BackgroundTransparency = 1
-                LabelFrame.Parent = Container
-
-                local Label = Instance.new('TextLabel')
-                Label.Size = UDim2.new(1, 0, 1, 0)
-                Label.Position = UDim2.new(0, 2, 0, 0)
-                Label.Text = text
-                Label.TextColor3 = Themes[Library.Theme].FontColor
-                Label.Font = Library.Font
-                Label.TextSize = 13
-                Label.TextXAlignment = Enum.TextXAlignment.Left
-                Label.BackgroundTransparency = 1
-                Label.Parent = LabelFrame
-
-                local LabelObj = {}
-
-                function LabelObj:AddColorPicker(id, config)
-                    local default = config.Default or Color3.fromRGB(255, 255, 255)
-                    local cb = config.Callback
-
-                    local PickerBtn = Instance.new('TextButton')
-                    PickerBtn.Size = UDim2.new(0, 25, 0, 14)
-                    PickerBtn.Position = UDim2.new(1, -30, 0, 2)
-                    PickerBtn.BackgroundColor3 = default
-                    PickerBtn.Text = ""
-                    PickerBtn.Parent = LabelFrame
-
-                    local PickerData = { Value = default }
-
-                    PickerBtn.MouseButton1Click:Connect(function()
-                        local randomColor = Color3.fromRGB(math.random(0,255), math.random(0,255), math.random(0,255))
-                        PickerData.Value = randomColor
-                        PickerBtn.BackgroundColor3 = randomColor
-                        Library:SafeCallback(cb, randomColor)
-                    end)
-
-                    function PickerData:SetValue(val)
-                        PickerData.Value = val
-                        PickerBtn.BackgroundColor3 = val
-                        Library:SafeCallback(cb, val)
-                    end
-
-                    Library.Options[id] = PickerData
-                    return LabelObj
-                end
-
-                function LabelObj:AddKeyPicker(id, config)
-                    local default = config.Default or "None"
-                    local cb = config.Callback
-
-                    local KeyBtn = Instance.new('TextButton')
-                    KeyBtn.Size = UDim2.new(0, 60, 0, 14)
-                    KeyBtn.Position = UDim2.new(1, -65, 0, 2)
-                    KeyBtn.BackgroundColor3 = Themes[Library.Theme].BackgroundColor
-                    KeyBtn.Text = default
-                    KeyBtn.TextColor3 = Themes[Library.Theme].FontColor
-                    KeyBtn.Font = Library.Font
-                    KeyBtn.TextSize = 11
-                    KeyBtn.Parent = LabelFrame
-
-                    local KeyData = { Value = default }
-                    local listening = false
-
-                    KeyBtn.MouseButton1Click:Connect(function()
-                        KeyBtn.Text = "..."
-                        listening = true
-                    end)
-
-                    InputService.InputBegan:Connect(function(input)
-                        if listening and input.UserInputType == Enum.UserInputType.Keyboard then
-                            listening = false
-                            KeyData.Value = input.KeyCode.Name
-                            KeyBtn.Text = KeyData.Value
-                            Library:SafeCallback(cb, input.KeyCode)
-                        end
-                    end)
-
-                    Library.Options[id] = KeyData
-                    return LabelObj
-                end
-
-                return LabelObj
+            function Group:AddLabel(text)
+                local LabelFrame = RenderInterface:Create("Frame", { Size = UDim2.new(1, 0, 0, 20), BackgroundTransparency = 1, Parent = ContentFrame })
+                local Lab = RenderInterface:Create("TextLabel", { Text = "  " .. text, Font = Library.Theme.Font, TextSize = 13, TextColor3 = Library.Theme.TextColor, Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, TextXAlignment = Enum.TextXAlignment.Left, Parent = LabelFrame })
+                updateSize()
+                return { SetText = function(t) Lab.Text = "  " .. t end, AddColorPicker = function(cid, coptions) 
+                    local cpdefault = coptions.Default or Color3.fromRGB(255,255,255)
+                    local cpcb = coptions.Callback or function() end
+                    local CPBox = RenderInterface:Create("Frame", { Size = UDim2.new(0, 14, 0, 14), Position = UDim2.new(1, -22, 0, 3), BackgroundColor3 = cpdefault, BorderSizePixel = 1, BorderColor3 = Color3.fromRGB(255,255,255), Parent = LabelFrame })
+                    return { SetImage = function() end }
+                end }
             end
 
-            function GroupObj:AddDivider()
-                local Div = Instance.new('Frame')
-                Div.Size = UDim2.new(1, 0, 0, 2)
-                Div.BackgroundColor3 = Themes[Library.Theme].OutlineColor
-                Div.BorderSizePixel = 0
-                Div.Parent = Container
+            function Group:AddDivider()
+                RenderInterface:Create("Frame", { Size = UDim2.new(1, -16, 0, 1), Position = UDim2.new(0, 8, 0, 0), BackgroundColor3 = Library.Theme.OutlineColor, BorderSizePixel = 0, Parent = ContentFrame })
+                updateSize()
             end
 
-            function GroupObj:AddButton(config)
-                local text = config.Text or "Button"
-                local func = config.Func
-
-                local Btn = Instance.new('TextButton')
-                Btn.Size = UDim2.new(1, -4, 0, 22)
-                Btn.BackgroundColor3 = Themes[Library.Theme].BackgroundColor
-                Btn.BorderColor3 = Themes[Library.Theme].OutlineColor
-                Btn.Text = text
-                Btn.TextColor3 = Themes[Library.Theme].FontColor
-                Btn.Font = Library.Font
-                Btn.TextSize = 13
-                Btn.Parent = Container
-
-                Btn.MouseButton1Click:Connect(function()
-                    Library:SafeCallback(func)
-                end)
+            function Group:AddButton(options)
+                local text = options.Text or "Button"
+                local func = options.Func or function() end
+                local BtnFrame = RenderInterface:Create("Frame", { Size = UDim2.new(1, 0, 0, 28), BackgroundTransparency = 1, Parent = ContentFrame })
+                local Btn = RenderInterface:Create("TextButton", { Text = text, Font = Library.Theme.Font, TextSize = 13, TextColor3 = Library.Theme.TextColor, Size = UDim2.new(1, -16, 1, -4), Position = UDim2.new(0, 8, 0, 2), BackgroundColor3 = Color3.fromRGB(35,35,35), BorderSizePixel = 1, BorderColor3 = Library.Theme.OutlineColor, Parent = BtnFrame })
+                Btn.MouseButton1Click:Connect(func)
+                updateSize()
             end
 
-            return GroupObj
+            return Group
         end
 
-        function TabObj:AddLeftGroupbox(title)
-            return createGroupbox(LeftPage, title)
-        end
+        function Tab:AddLeftGroupbox(groupName) return CreateGroupbox(LeftContainer, groupName) end
+        function Tab:AddRightGroupbox(groupName) return CreateGroupbox(RightContainer, groupName) end
 
-        function TabObj:AddRightGroupbox(title)
-            return createGroupbox(RightPage, title)
-        end
-
-        TabObj.Page = TabPage
-        table.insert(WindowObj.Tabs, TabObj)
-        return TabObj
+        table.insert(Window.Tabs, Tab)
+        return Tab
     end
 
-    return WindowObj
+    function Library:Notify(notifOptions)
+        warn("Kings Hub: " .. tostring(notifOptions.Description))
+    end
+
+    return Window
 end
 
-function Library:OnUnload(cb)
-    self.UnloadCallback = cb
-end
+local ThemeManager = { SetLibrary = function() end, SetFolder = function() end, ApplyToTab = function() end }
+local SaveManager = { SetLibrary = function() end, SetFolder = function() end, IgnoreThemeSettings = function() end, SetIgnoreIndexes = function() end, BuildConfigSection = function() end, LoadAutoloadConfig = function() end }
+
+function Library:OnUnload(cb) end
+
 return Library
