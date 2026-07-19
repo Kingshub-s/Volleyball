@@ -1,5 +1,3 @@
--- This script was generated using the lualock Obfuscator v3.0
-
 local Yc,cb,He,Te,h,gc=getmetatable,type,bit32.bxor,pairs
 local ra,Ia,P,z,Jb,Aa,da,I,sa,zc,Hc,K,Pe,F,j,yb,ma,ub,Ea,Nc,Qe,qa,mf,J,x,oa,Xb,rc,Td,je,gb,xa,nb,df,Qa,t_,ge,wf,Gb,Na,S,M,Rb,Ge;
 qa=(getfenv());
