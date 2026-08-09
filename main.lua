@@ -1,6 +1,3 @@
--- Kings Hub Loader + Key System (Obsidian Style)
--- Service: kingshub
-
 local ServiceID = "kingshub"
 local GetKeyURL = "https://ads.pandauth.com/getkey/kingshub"
 local ScriptURL = "https://raw.githubusercontent.com/Kingshub-s/dfgfdgdfgdfgdfgfdg/main/vbl"
